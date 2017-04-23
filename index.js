@@ -3,6 +3,7 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var port = process.env.PORT || 3000;
 var fs= require('fs');
+var sha512= require('sha512');
 
 //Authors Felix (741591), Anna Rosa(742506)
 //Node.js-Server working with Socket.io to create a real-time-communication-chat
@@ -18,7 +19,9 @@ app.get('/', function(req, res){
 
 //Array of all online users, they are saved as objects with the chosen name and their socketID.
 var users = [];
-
+var salt1="k3?"
+var salt2="_341as3!Xx";
+var regexp=/[()<>{}:;*%//\\'",$\s]/g;
 
 //ab hier
 
@@ -58,58 +61,76 @@ io.on('connection', function(socket){
   // already, it is not accepted (-> registration fail), if not, registraton succeeds and user name and socketID are saved in users-array
 	socket.on('registration', function(logindata){
 		var loginobj= JSON.parse(logindata);
-		logindata= {'_id':loginobj.name, 'password': loginobj.pw};
-		db.get(loginobj.name, function(err, body){
-			if(err){
-				db.insert(logindata, function(err, body, header) {
-					if (!err) {
-						if(!userisonline(loginobj.name)){
-								users.push({'id': socket.id, 'name': loginobj.name});
-                socket.emit('registration success', index);
-								io.emit('user update', loginobj.name + ' entered the chat');
-							}
 
-					}else{
-						socket.emit('registration fail', 'Registration failed');
-					}
-				});
-			}else{
-				socket.emit('registration fail', 'Registration failed');
-			}
-		});
+  	if(loginobj.name.includes(' ')){
+  		  socket.emit('registration fail','Registration failed: Name must not contain blank spaces!');
+  	}else if(regexp.test(loginobj.name)){
+  		socket.emit('registration fail', 'Entered name contains invalid character');
+  	}
+  	else if(loginobj.name.length==0){
+  	  socket.emit('registration fail', 'Registration failed: Name must not be empty!');
+  	}else if(loginobj.password<8){
+  		  socket.emit('registration fail', 'Registration failed: Password too short');
+  	}else{
+          var hashedpw= sha512(loginobj.name+salt1+loginobj.pw+salt2);
+      		logindata= {'_id':loginobj.name, 'password': hashedpw.toString('hex')};
+      		db.get(loginobj.name, function(err, body){
+      			if(err){
+      				db.insert(logindata, function(err, body, header) {
+      					if (!err) {
+      						if(!userisonline(loginobj.name)){
+      								users.push({'id': socket.id, 'name': loginobj.name});
+                      socket.emit('registration success', index);
+      								io.emit('user update', loginobj.name + ' entered the chat');
+      							}
+
+      					}else{
+      						socket.emit('registration fail', 'Registration failed');
+      					}
+      				});
+      			}else{
+      				socket.emit('registration fail', 'Registration failed');
+      			}
+      		});
+        }
 	});
 
 	socket.on('login', function(logindata){
         var loginobj= JSON.parse(logindata);
 		logindata= {'_id':loginobj.name, 'password': loginobj.pw};
-		db.get(loginobj.name, function(err, body){
-			if(!err){
-        console.log('uname found');
-					if(loginobj.name==body._id&&loginobj.pw==body.password){
-						console.log('Password valid');
-						if(!userisonline(loginobj.name)){
-              console.log('user not online yet');
-							users.push({'id': socket.id, 'name': loginobj.name});
-              socket.emit('login success', index);
-							io.emit('user update', loginobj.name + ' entered the chat');
-						}
-            else{
-              socket.emit('login fail','User is already online!');
-            }
+    if(loginobj.name.includes(' ')){
+  		  socket.emit('login fail','Login failed');
+  	}else if(regexp.test(loginobj.name)){
+  		socket.emit('login fail', 'Entered name contains invalid character');
+  	}
+  	else if(loginobj.name.length==0){
+  	  socket.emit('login fail', 'Login failed: Name must not be empty!');
+  	}else if(loginobj.password<8){
+  		  socket.emit('login fail', 'Login failed: Wrong password');
+  	}	else{
+    		db.get(loginobj.name, function(err, body){
+    			if(!err){
+              var hashedpw=sha512(loginobj.name+salt1+loginobj.pw+salt2);
+    					if(loginobj.name==body._id&&hashedpw.toString('hex')==body.password){
+    						if(!userisonline(loginobj.name)){
+                  users.push({'id': socket.id, 'name': loginobj.name});
+                  socket.emit('login success', index);
+    							io.emit('user update', loginobj.name + ' entered the chat');
+    						}
+                else{
+                  socket.emit('login fail','User is already online!');
+                }
 
 
-					}
-					else{
-						socket.emit('login fail', 'Login did not succeed: Wrong password!');
-						console.log('password invalid');
-					}
-					console.log(body);
-
-
-			}else{
-				socket.emit('login fail', 'Login did not succeed: User does not exist');
-			}
-		});
+    					}
+    					else{
+    						socket.emit('login fail', 'Login did not succeed: Wrong password!');
+    					}
+    			}else{
+    				socket.emit('login fail', 'Login did not succeed: User does not exist');
+    			}
+    		});
+      }
 	});
 
   // When Socket sends new Chat-Message
