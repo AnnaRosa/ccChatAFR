@@ -19,90 +19,46 @@ app.get('/', function(req, res){
 //Array of all online users, they are saved as objects with the chosen name and their socketID.
 var users = [];
 
-
-//ab hier
-
-var cloudant = {
-                 url : "https://bfce9a9d-6565-4e6b-a730-f2be0c2aaac4-bluemix:34768a45ca1a845b537fbdd7b611cf51fcbf94998ee3e72c0ab02be2add93957@bfce9a9d-6565-4e6b-a730-f2be0c2aaac4-bluemix.cloudant.com" // TODO: Update                 
-};
-if (process.env.hasOwnProperty("VCAP_SERVICES")) {
-  // Running on Bluemix. Parse out the port and host that we've been assigned.
-  var env = JSON.parse(process.env.VCAP_SERVICES);
-  var host = process.env.VCAP_APP_HOST;
-  var port = process.env.VCAP_APP_PORT;
- 
-  // Also parse out Cloudant settings.
-  cloudant = env['cloudantNoSQLDB'][0].credentials;  
-}
-var nano = require('nano')(cloudant.url);
-var db = nano.db.use('login_data');
-console.log('db success');
-// bis hier
-
-function userisonline(username){
-	for(var i=0; i<users.length; i++){
-		if(users[i].name===username){
-			return true;
-		}
-	}
-	
-		return false;
-	
-}
-
 //When Client connects to server
 io.on('connection', function(socket){
 	console.log('new User came online');
 
   //When client starts registration, it calles the function with the chosen username. If the users array contains the name
   // already, it is not accepted (-> registration fail), if not, registraton succeeds and user name and socketID are saved in users-array
-	socket.on('registration', function(logindata){
-		var loginobj= JSON.parse(logindata);
-		logindata= {'_id':loginobj.name, 'password': loginobj.pw};
-		db.get(loginobj.name, function(err, body){
-			if(err){
-				db.insert(logindata, function(err, body, header) {
-					if (!err) {       
-						if(!userisonline(loginobj.name)){
-								users.push({'id': socket.id, 'name': loginobj.name});
-								io.emit('user update', loginobj.name + ' entered the chat');	
-							}
-						socket.emit('registration success', index);
-					}else{
-						socket.emit('registration fail', 'Registration failed');
-					}
-				});
-			}else{
-				socket.emit('registration fail', 'Registration failed');
+	socket.on('registration', function(chosenname){
+        var accepted=true;
+        for(var i= 0; i<users.length; i++){
+          if(users[i].name===chosenname){
+            accepted=false;
+          }
+        }
+
+			if(accepted==true ){
+				users.push({'id': socket.id, 'name': chosenname});
+        socket.emit('registration success',index);
+        io.emit('user update', chosenname + ' entered the chat');
 			}
-		});
+      else{
+        socket.emit('registration fail', 'Registration failed: Name already in use! Please try again using another name!');
+      }
 	});
 	
-	socket.on('login', function(logindata){
-        var loginobj= JSON.parse(logindata);
-		logindata= {'_id':loginobj.name, 'password': loginobj.pw};
-		db.get(loginobj.name, function(err, body){
-			if(!err){	
-					if(loginobj.name==body._id&&loginobj.pw==body.password){
-						console.log('Password valid');
-						if(!usersisonline(loginobj.name)){
-							users.push({'id': socket.id, 'name': loginobj.name});
-							io.emit('user update', loginobj.name + ' entered the chat');	
-						}
-						socket.emit('login success', index);
-						
-					}
-					else{
-						socket.emit('login fail', 'Login did not succeed: User does not exist');
-						console.log('password invalid');
-					}
-					console.log(body);
-				
-				
-			}else{
-				socket.emit('login fail', 'Login did not succeed: User does not exist');
+	socket.on('login', function(chosenname){
+        var accepted=true;
+        for(var i= 0; i<users.length; i++){
+          if(users[i].name===chosenname){
+            accepted=false;
+          }
+        }
+
+			if(accepted==true ){
+				users.push({'id': socket.id, 'name': chosenname});
+        socket.emit('registration success',index);
+        io.emit('user update', chosenname + ' entered the chat');
 			}
-		});
+      else{
+        socket.emit('registration fail', 'Registration failed: Name already in use! Please try again using another name!');
+      }
 	});
 
   // When Socket sends new Chat-Message
@@ -181,5 +137,3 @@ io.on('connection', function(socket){
 http.listen(port, function(){
   console.log('listening on *:' + port);
 });
-
-

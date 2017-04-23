@@ -9,7 +9,7 @@ form{margin-top: 200px}
 #entryrequests{font: Helvetica; font-size: 30px; text-align: center; }
 #name{font-size: 15px; margin-left: auto; margin-right: auto; display:block;}
 #password{font-size: 15px; margin-left: auto; margin-right: auto; display:block;}
-#login{margin-left: auto; margin-right: auto; display: block; margin-top: 5px;}
+button{margin-left: auto; margin-right: auto; display: block; margin-top: 5px;}
 #register{margin-left: auto; margin-right: auto; display: block; margin-top: 5px;}
 </style>
 </head>
@@ -38,48 +38,21 @@ $(function () {
   /*Checks if name is valid (at least one character and no blank spaces) to send, if so sends it to the server to check if another
    user with the name exists*/
   $('#login').click(function(){
-	var namevalue= $('#name').val();
-	var pwvalue=$('#password').val();
-	var regexp=/[()<>{}:;*%//\\'",$\s]/g;
-	if(namevalue.includes(' ')){
-		  alter('Login failed: Name must not contain blank spaces!');
-	}else if(regexp.test(namevalue)){
-		alert('Entered name contains invalid character');
-	}
-	else if(namevalue.length==0){
-	  alert('Login failed: Name must not be empty!');
-	}else if(pwvalue.includes(' ')){
-		  alert('Login failed: Password must not contain blank spaces!');
-	}else if(pwvalue.length<2){
-	  alert('Login failed: Password too short!');
+	if($('#name').val().includes(' ')){
+		  $('#feedback').text('Registration failed: Name must not contain blank spaces!');
+	}else if($('#name').val().length==0){
+	  $('#feedback').text('Registration failed: Name must not be empty!');
 	}
 	else{
-		var logindata={'name':namevalue, 'pw':pwvalue};
-		socket.emit('login', JSON.stringify(logindata));
+	socket.emit('registration', $('#name').val());
 	}
   
     return false;
   });
   
   $('#register').click(function(){
-	var namevalue= $('#name').val();
-	var pwvalue=$('#password').val();
-	if(namevalue.includes(' ')){
-		  alert('Registration failed: Name must not contain blank spaces!');
-	}else if(namevalue.length==0){
-	 alert('Registration failed: Name must not be empty!');
-	}
-	else if(pwvalue.includes(' ')){
-		  alert('Registration failed: Password must not contain blank spaces!');
-	}else if(pwvalue.length<2){
-	  alert('Registration failed: Password too short!');
-	}
-	else{
-		var logindata={'name':namevalue, 'pw':pwvalue};
-		socket.emit('registration', JSON.stringify(logindata));
-	}
-    return false;
-	
+	socket.emit('login', $('#name').val());
+	alert('hi');
   });
 
 //Refreshes the content of the html-document according to what the server sent ( -> msg ) when logging in was successful
@@ -95,23 +68,6 @@ $(function () {
 // If registration failed on the server-side (-> Name already in use), informs the user and empties name-field
   socket.on('registration fail', function(msg){
     $('#name').val('');
-	$('#password').val('');
-    $('#feedback').text(msg);
-  });
-  
-   socket.on('login success', function(msg){
-		//As name is registered, saves it in sessionStorage
-		sessionStorage.setItem('username', $('#name').val());
-		$('#main_body').html(msg);
-		//adds welcome-message to the new document
-	   $('#messages').append($('<li>').html("<div id=list>Welcome! <br/>You successfully joined the chat. <br/> For sending private messages to a user, type "+'\\@'+"username and your private message. For a shortcut you can also simply clickt the name of the receiver in the chat or the user list. If you want to know who's online, simply type \\list. <br/> Have fun!<div>"));
-
-
-  });
-// If login failed on the server-side (-> Name already in use), informs the user and empties name-field
-  socket.on('login fail', function(msg){
-    $('#name').val('');
-	$('#password').val('');
     $('#feedback').text(msg);
   });
 });
