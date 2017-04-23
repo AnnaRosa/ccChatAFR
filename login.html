@@ -14,9 +14,9 @@ form{margin-top: 200px}
 </style>
 </head>
 <body id='main_body'>
-  
+
   <form id='loginform'>
-	<h1> Welcome to our Chatroom </h1> 
+	<h1> Welcome to our Chatroom </h1>
 	<p id='entryrequests'>Please, enter your nickname! </p>
     <input type='text' id='name'/>
 	<p id='entryrequests'>Please, enter your password!</p>
@@ -48,19 +48,16 @@ $(function () {
 	}
 	else if(namevalue.length==0){
 	  alert('Login failed: Name must not be empty!');
-	}else if(pwvalue.includes(' ')){
-		  alert('Login failed: Password must not contain blank spaces!');
-	}else if(pwvalue.length<2){
-	  alert('Login failed: Password too short!');
-	}
-	else{
+	}else if(pwvalue.length<8){
+		  alert('Login failed: Wrong password');
+	}	else{
 		var logindata={'name':namevalue, 'pw':pwvalue};
 		socket.emit('login', JSON.stringify(logindata));
 	}
-  
+
     return false;
   });
-  
+
   $('#register').click(function(){
 	var namevalue= $('#name').val();
 	var pwvalue=$('#password').val();
@@ -71,7 +68,7 @@ $(function () {
 	}
 	else if(pwvalue.includes(' ')){
 		  alert('Registration failed: Password must not contain blank spaces!');
-	}else if(pwvalue.length<2){
+	}else if(pwvalue.length<8){
 	  alert('Registration failed: Password too short!');
 	}
 	else{
@@ -79,7 +76,7 @@ $(function () {
 		socket.emit('registration', JSON.stringify(logindata));
 	}
     return false;
-	
+
   });
 
 //Refreshes the content of the html-document according to what the server sent ( -> msg ) when logging in was successful
@@ -96,9 +93,9 @@ $(function () {
   socket.on('registration fail', function(msg){
     $('#name').val('');
 	$('#password').val('');
-    $('#feedback').text(msg);
+    alert(msg);
   });
-  
+
    socket.on('login success', function(msg){
 		//As name is registered, saves it in sessionStorage
 		sessionStorage.setItem('username', $('#name').val());
@@ -112,7 +109,7 @@ $(function () {
   socket.on('login fail', function(msg){
     $('#name').val('');
 	$('#password').val('');
-    $('#feedback').text(msg);
+    alert(msg);
   });
 });
 </script>

@@ -23,16 +23,16 @@ var users = [];
 //ab hier
 
 var cloudant = {
-                 url : "https://bfce9a9d-6565-4e6b-a730-f2be0c2aaac4-bluemix:34768a45ca1a845b537fbdd7b611cf51fcbf94998ee3e72c0ab02be2add93957@bfce9a9d-6565-4e6b-a730-f2be0c2aaac4-bluemix.cloudant.com" // TODO: Update                 
+                 url : "https://bfce9a9d-6565-4e6b-a730-f2be0c2aaac4-bluemix:34768a45ca1a845b537fbdd7b611cf51fcbf94998ee3e72c0ab02be2add93957@bfce9a9d-6565-4e6b-a730-f2be0c2aaac4-bluemix.cloudant.com" // TODO: Update
 };
 if (process.env.hasOwnProperty("VCAP_SERVICES")) {
   // Running on Bluemix. Parse out the port and host that we've been assigned.
   var env = JSON.parse(process.env.VCAP_SERVICES);
   var host = process.env.VCAP_APP_HOST;
   var port = process.env.VCAP_APP_PORT;
- 
+
   // Also parse out Cloudant settings.
-  cloudant = env['cloudantNoSQLDB'][0].credentials;  
+  cloudant = env['cloudantNoSQLDB'][0].credentials;
 }
 var nano = require('nano')(cloudant.url);
 var db = nano.db.use('login_data');
@@ -45,9 +45,9 @@ function userisonline(username){
 			return true;
 		}
 	}
-	
-		return false;
-	
+
+	return false;
+
 }
 
 //When Client connects to server
@@ -62,12 +62,13 @@ io.on('connection', function(socket){
 		db.get(loginobj.name, function(err, body){
 			if(err){
 				db.insert(logindata, function(err, body, header) {
-					if (!err) {       
+					if (!err) {
 						if(!userisonline(loginobj.name)){
 								users.push({'id': socket.id, 'name': loginobj.name});
-								io.emit('user update', loginobj.name + ' entered the chat');	
+                socket.emit('registration success', index);
+								io.emit('user update', loginobj.name + ' entered the chat');
 							}
-						socket.emit('registration success', index);
+
 					}else{
 						socket.emit('registration fail', 'Registration failed');
 					}
@@ -77,28 +78,34 @@ io.on('connection', function(socket){
 			}
 		});
 	});
-	
+
 	socket.on('login', function(logindata){
         var loginobj= JSON.parse(logindata);
 		logindata= {'_id':loginobj.name, 'password': loginobj.pw};
 		db.get(loginobj.name, function(err, body){
-			if(!err){	
+			if(!err){
+        console.log('uname found');
 					if(loginobj.name==body._id&&loginobj.pw==body.password){
 						console.log('Password valid');
-						if(!usersisonline(loginobj.name)){
+						if(!userisonline(loginobj.name)){
+              console.log('user not online yet');
 							users.push({'id': socket.id, 'name': loginobj.name});
-							io.emit('user update', loginobj.name + ' entered the chat');	
+              socket.emit('login success', index);
+							io.emit('user update', loginobj.name + ' entered the chat');
 						}
-						socket.emit('login success', index);
-						
+            else{
+              socket.emit('login fail','User is already online!');
+            }
+
+
 					}
 					else{
-						socket.emit('login fail', 'Login did not succeed: User does not exist');
+						socket.emit('login fail', 'Login did not succeed: Wrong password!');
 						console.log('password invalid');
 					}
 					console.log(body);
-				
-				
+
+
 			}else{
 				socket.emit('login fail', 'Login did not succeed: User does not exist');
 			}
@@ -181,5 +188,3 @@ io.on('connection', function(socket){
 http.listen(port, function(){
   console.log('listening on *:' + port);
 });
-
-
