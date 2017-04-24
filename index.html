@@ -21,7 +21,7 @@
 	  #listlink{font-size: 17px; text-decoration: none; color: green}
     </style>
   </head>
-  <body>
+  <body id="boddie">
     <div id="container">
     <ul id="messages"></ul>
     <form action="">
@@ -35,11 +35,12 @@
 
     //called on click of a name, adds \@name to the beginning of the textfield
     function typehelper(name){
-      document.getElementById('m').value= '\\@'+ name+ ' '+document.getElementById('m').value;
+      document.getElementById('m').value= '\\@'+ name+ ' ';document.getElementById('m').focus();
       }
   $(function () {
     //loads socket.io-client and connects to socket.io-server
     var socket = io();
+	$('#m').focus();
 
     /*Function called once the Send-Button is pressed, checks if message contains
       the string \list or a  private message call (\@username ).
@@ -86,7 +87,7 @@
             $('#m').val('');
           }else if(!(/\\@.*?\s/g).test(textfield)){
             //if there is only the call for the private message, it doesn't send the message, but asks for more.
-            $('#messages').append($('<li>').html("<div id=list>"+'You forgot to type a message, try again!'+"<div>"));
+            addToList($('<li>').html("<div id=list>"+'You forgot to type a message, try again!'+"<div>"));
           }
         }
 
@@ -116,37 +117,40 @@
         1.If this user is not the receipient of the message, he is treated as the sender -> a "private sent to [receiver]" is added
           before adding it to the list of messages as user otherwise only sees that he is the sender but not to whom the message was sent*/
         if(msgObj.mode.name!==sessionStorage.getItem('username')){
-          $('#messages').append($('<li>').html("<div id = name>" + "<a id = name onclick=typehelper('"+msgObj.name+"') href='#'>" + msgObj.name + "</a>" + "</div>" +  "<div id=rest>" +' [private to '+ msgObj.mode.name +'] '+ msgObj.date + ': ' + msgObj.message +"</div>"));
+          addToList($('<li>').html("<div id = name>" + "<a id = name onclick=typehelper('"+msgObj.name+"') href='#'>" + msgObj.name + "</a>" + "</div>" +  "<div id=rest>" +' [private to '+ msgObj.mode.name +'] '+ msgObj.date + ': ' + msgObj.message +"</div>"));
         }else{
           //2.If this user is the receipient of the message,only a "private" is added, as he sees who the sender is
-          $('#messages').append($('<li>').html("<div id = name>" + "<a id = name onclick=typehelper('"+msgObj.name+"') href='#'>" + msgObj.name + "</a>" + "</div>" + "<div id=rest>" +'[private] '  + msgObj.date + ': ' + msgObj.message +"</div>"));
+          addToList($('<li>').html("<div id = name>" + "<a id = name onclick=typehelper('"+msgObj.name+"') href='#'>" + msgObj.name + "</a>" + "</div>" + "<div id=rest>" +'[private] '  + msgObj.date + ': ' + msgObj.message +"</div>"));
         }
       }else{
-        //If the message is not public, it simply adds it ot the list of messages
-        $('#messages').append($('<li>').html("<div id = name>" + "<a id = name onclick=typehelper('"+msgObj.name+"') href='#'>" + msgObj.name + "</a>" + "</div>"  + "<div id=rest>" + fullmsg +"</div>"));
+        //If the message is public, it simply adds it ot the list of messages
+        addToList($('<li>').html("<div id = name>" + "<a id = name onclick=typehelper('"+msgObj.name+"') href='#'>" + msgObj.name + "</a>" + "</div>"  + "<div id=rest>" + fullmsg +"</div>"));
+		window.scrollTo(0,document.body.scrollHeight);
       }
     });
 
     //If chat message failed (i.e. user name of private message did not exist in system), server sends a chat message failure-message
     // that is displayed in Message-list
     socket.on('chat message failure', function(msg){
-      $('#messages').append($('<li>').html("<div id=list>"+msg+"<div>"));
+      addToList($('<li>').html("<div id=list>"+msg+"<div>"));
+	  
     });
 
     // receives user update ( user came online / user left chat) from server and shows in Message-list
     socket.on('user update', function(msg){
-      $('#messages').append($('<li>').html("<div id=list>"+msg+"<div>"));
+      addToList($('<li>').html("<div id=list>"+msg+"<div>"));
 	 
     });
-
-
-
-
     //receives user list from server and shows ist in message-list
     socket.on('user list', function(msg){
-        $('#messages').append($('<li>').html("<div id=list>"+msg+"<div>"));
+        addToList($('<li>').html("<div id=list>"+msg+"<div>"));
     });
   });
+  
+  function addToList(msg){
+	$('#messages').append(msg);
+	window.scrollTo(0,document.body.scrollHeight);
+  }
 </script>
   </body>
 </html>

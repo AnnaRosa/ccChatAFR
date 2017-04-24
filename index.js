@@ -14,15 +14,12 @@ app.enable('trust proxy');
 
 app.use (function (req, res, next) {
         if (req.secure) {
-				console.log('ISsecure');
                 // request was via https, so do no special handling
                 next();
-				console.log('is nexted');
         } else {
-			console.log('Iamnotsecue');
+			
                 // request was via http, so redirect to https
                 res.redirect('https://' + req.headers.host + req.url);
-				console.log('now I am');
         }
 });
 
@@ -37,7 +34,7 @@ var index = (fs.readFileSync(__dirname+ '/index.html')).toString();
 
 //Send login-HTML
 app.get('/', function(req, res){
-	console.log('I sent the loginblubb');
+	
   res.sendFile(__dirname + '/login.html');
 });
 
@@ -120,7 +117,7 @@ io.on('connection', function(socket){
 	});
 
 	socket.on('login', function(logindata){
-		console.log('you tried to login');
+		
         var loginobj= JSON.parse(logindata);
 		logindata= {'_id':loginobj.name, 'password': loginobj.pw};
     if(loginobj.name.includes(' ')){
@@ -133,9 +130,9 @@ io.on('connection', function(socket){
   	}else if(loginobj.password<8){
   		  socket.emit('login fail', 'Login failed: Wrong password');
   	}	else{
-			console.log('request to database');
+			
     		db.get(loginobj.name, function(err, body){
-				console.log('dbresponse');
+				
     			if(!err){
               var hashedpw=sha512(loginobj.name+salt1+loginobj.pw+salt2);
     					if(loginobj.name==body._id&&hashedpw.toString('hex')==body.password){
