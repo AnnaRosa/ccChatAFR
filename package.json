@@ -4,8 +4,10 @@
   "description": "my first socket.io app",
   "dependencies": {
     "express": "^4.15.2",
+	"express-session": "*",
     "socket.io": "^1.7.3",
-	"nano":"*"
+	   "nano":"*",
+     "redis":"*"
   },
   "scripts": {
     "start": "node index.js"
